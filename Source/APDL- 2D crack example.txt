@@ -1,0 +1,157 @@
+FINISH
+/clear
+!******CREATE USERELEMENT*************************
+
+NNODES = 4             !- 4-2D, 20-3D
+NDIM = 2               !- 2-2D, 3-3D 
+NREAL = 8              !- number propeties model
+NSAVEVARS = 1000       !- the number of saved variables.
+NRSLTVAR = 1000        !- the number of variables saved in results files.
+KEYANSMAT = 1          !- 0-Make up your own material, 1-Use standard ANSYS material
+NINTPNTS = 4           !- 4-2D, 8-3D 
+KESTRESS = 5           !- 1-Axisymmetric elements, 2-Plane strain elements, 3-3D solid elements, 5-Generalized plane strain elements  
+KEYSYM = 0             !- 0-symmtric matrix, 1-unsymmetric matrix
+!KEYSHAPE: QUAD-2D, BRICK-3D 
+
+
+
+/PREP7
+ET,1,USER300
+USRELEM, NNODES, NDIM, QUAD, NREAL, NSAVEVARS, NRSLTVAR, KEYANSMAT, NINTPNTS, KESTRESS, KEYSYM
+usrdof,Define,ux,uy,curr
+!*****************************************************	
+
+!******DEFINE PARAMETERS RELATED TO MODEL************
+L  = 0.025		!- Phase Field length parameter [mm]
+Gc = 2.7		!- Critical energy release rate [MPa mm]
+kf = 1			!- loading : 0-static, 1-fatigue
+tm = 1			!- model   : 1-AT1, 2-AT2, 3-PF-CZM
+df = 1                  !- calculate driving force : 1-umat, 2-Amor, 3-meihe, 4-maxstress, 5-stress*epsilon
+lr = 1                  !- for model PF-CZM : 1-linear, 2-nonlinear 
+ks = 1                  !- 0-monolithic, 1-staggered
+sigc = 1000             !- Material strength [MPa]
+kh = 1                  !- keyHmin : 0-off, 1-on 
+hhh  = 0.01		!- element size	
+
+R,1,L,Gc,kf,tm,df,lr
+RMORE, ks, sigc, kn
+!*******************************************************
+
+!*****************MATERIAL PROPETIES*******************
+E  = 210000 		!- Young's modulus [MPa]
+v  = 0.3		!- Poisson's ratio
+sig0 = 465              !- Yield stress [MPa]
+Rinf = 55               !- Exponential coefficient [MPa]          
+b = 2.38                !- Exponential saturation parameter
+C = 23554               !- Chaboche constants 1 [MPa]
+gamma = 139             !- Chaboche constants 2
+
+MPTEMP,,,,,,,,  
+MPTEMP,1,0  
+MPDATA,EX,1,,E
+MPDATA,PRXY,1,,v 
+
+!TB,NLISO,1,1,,VOCE           ! Activate NLISO data table
+!TBDATA,1,sig0,1e-10,Rinf,b   ! Constants at first temperature
+
+!TB,CHABOCHE,1,1,1            ! Activate Chaboche data table with                        
+!TBDATA,1,sig0                ! C1 - Initial yield stress
+!TBDATA,2,C,gamma             ! C2,C3	- Chaboche constants
+
+
+!*****************************************************
+
+!***************** GEOMETRY***************************
+
+PLTWDTH = 1
+PLTHGT  = 1 
+CRCKL   = 0.5
+DDD = 0.5/hhh
+
+!************** KEYPOINTS
+K,1,CRCKL,PLTHGT/2,,
+K,2,,PLTHGT/2,,
+K,3,,,,
+K,4,CRCKL,,,
+K,5,PLTWDTH,
+K,6,PLTWDTH,PLTHGT/2,,
+K,7,PLTWDTH,PLTHGT,,
+K,8,CRCKL,PLTHGT,,
+K,9,,PLTHGT,,
+K,10,,PLTHGT/2,,
+
+!************** LINES
+LSTR,       1,       2 
+LSTR,       2,       3  
+LSTR,       3,       4 
+LSTR,       4,       5 
+LSTR,       5,       6 
+LSTR,       6,       7  
+LSTR,       7,       8
+LSTR,       8,       9
+LSTR,       9,       10
+LSTR,       1,       10
+LSTR,       1,       4
+LSTR,       1,       6
+LSTR,       1,       8
+
+!************** AREAS
+AL,1,2,3,11 
+AL,4,5,12,11 
+AL,6,7,13,12 
+AL,8,9,10,13 
+!******************************************************
+
+!****************MESHING*******************************
+FLST,5,13,4,ORDE,2  
+FITEM,5,1   
+FITEM,5,-13 
+CM,_Y,LINE  
+LSEL, , , ,P51X 
+CM,_Y1,LINE 
+CMSEL,,_Y   
+!*  
+LESIZE,_Y1, , ,DDD, , , , ,0 
+!*  
+FLST,5,4,5,ORDE,2   
+FITEM,5,1   
+FITEM,5,-4  
+CM,_Y,AREA  
+ASEL, , , ,P51X 
+CM,_Y1,AREA 
+CHKMSH,'AREA'   
+CMSEL,S,_Y  
+!*  
+AMESH,_Y1   
+!*  
+CMDELE,_Y   
+CMDELE,_Y1  
+CMDELE,_Y2  
+ 
+!******************************************************
+
+!*******************LOADS******************************
+
+DL,3, ,UY,0  
+DL,4, ,UY,0  
+DK,5, , , ,0,UX, , , , , ,   
+
+DL,7, ,UY,0.01
+DL,8, ,UY,0.01
+
+!******************************************************
+
+
+!*****************SOLUTION*****************************
+FINISH
+/SOL
+
+nlgeom,on
+OUTRES,ALL,ALL
+OUTRES,SVAR,ALL
+time,1
+nsubst,1000,100000000,100
+SAVE  
+NROPT, FULL
+!SOLVE
+!******************************************************
