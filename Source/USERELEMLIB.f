@@ -626,12 +626,7 @@ c*************************************************************************
             dgf=(dgNum*gDen-gNum*dgDen)/(gDen**2.d0)
             ddgf=((ddgNum*gDen-gNum*ddgDen)*gDen-2.d0*
      1 (dgNum*gDen-gNum*dgDen)*dgDen)/(gDen**3.d0)
-            if (keyHmin.eq.1) then
-                 Hmin = 0.5d0*sigc**2/Ex
-            else
-                 Hmin = 0.d0
-            endif  
-            
+            Hmin = 0.5d0*sigc**2/Ex           
          end if
 c*************************************************************************
          

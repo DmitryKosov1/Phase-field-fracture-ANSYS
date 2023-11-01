@@ -4,7 +4,7 @@ FINISH
 
 NNODES = 4             !- 4-2D, 20-3D
 NDIM = 2               !- 2-2D, 3-3D 
-NREAL = 8              !- number propeties model
+NREAL = 9              !- number propeties model
 NSAVEVARS = 1000       !- the number of saved variables.
 NRSLTVAR = 1000        !- the number of variables saved in results files.
 KEYANSMAT = 1          !- 0-Make up your own material, 1-Use standard ANSYS material
@@ -20,21 +20,24 @@ ET,1,USER300
 USRELEM, NNODES, NDIM, QUAD, NREAL, NSAVEVARS, NRSLTVAR, KEYANSMAT, NINTPNTS, KESTRESS, KEYSYM
 usrdof,Define,ux,uy,curr
 !*****************************************************	
+!RECOMENDATION
+!for static loading : AT1, kh=1
+!for fatigue loading : AT1, kh=0
 
 !******DEFINE PARAMETERS RELATED TO MODEL************
-L  = 0.025		!- Phase Field length parameter [mm]
+L  = 0.04		!- Phase Field length parameter [mm]
 Gc = 2.7		!- Critical energy release rate [MPa mm]
-kf = 1			!- loading : 0-static, 1-fatigue
+kf = 0		        !- loading : 0-static, 1-fatigue
 tm = 1			!- model   : 1-AT1, 2-AT2, 3-PF-CZM
 df = 1                  !- calculate driving force : 1-umat, 2-Amor, 3-meihe, 4-maxstress, 5-stress*epsilon
 lr = 1                  !- for model PF-CZM : 1-linear, 2-nonlinear 
 ks = 1                  !- 0-monolithic, 1-staggered
-sigc = 1000             !- Material strength [MPa]
+sigc = 500              !- Material strength [MPa]
 kh = 1                  !- keyHmin : 0-off, 1-on 
 hhh  = 0.01		!- element size	
 
 R,1,L,Gc,kf,tm,df,lr
-RMORE, ks, sigc, kn
+RMORE, ks, sigc, kh
 !*******************************************************
 
 !*****************MATERIAL PROPETIES*******************
@@ -51,12 +54,12 @@ MPTEMP,1,0
 MPDATA,EX,1,,E
 MPDATA,PRXY,1,,v 
 
-!TB,NLISO,1,1,,VOCE           ! Activate NLISO data table
-!TBDATA,1,sig0,1e-10,Rinf,b   ! Constants at first temperature
+TB,NLISO,1,1,,VOCE           ! Activate NLISO data table
+TBDATA,1,sig0,1e-10,Rinf,b   ! Constants at first temperature
 
-!TB,CHABOCHE,1,1,1            ! Activate Chaboche data table with                        
-!TBDATA,1,sig0                ! C1 - Initial yield stress
-!TBDATA,2,C,gamma             ! C2,C3	- Chaboche constants
+TB,CHABOCHE,1,1,1            ! Activate Chaboche data table with                        
+TBDATA,1,sig0                ! C1 - Initial yield stress
+TBDATA,2,C,gamma             ! C2,C3	- Chaboche constants
 
 
 !*****************************************************
