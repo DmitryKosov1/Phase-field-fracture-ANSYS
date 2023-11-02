@@ -925,9 +925,9 @@ c
 #include "impcom.inc"
 
       DOUBLE PRECISION bmat(ndim,nnodes),
-     & xx1(3,3),utmp(nUsrDof-nNodes)
+     & xx1(3,3),utmp(nUsrDof-nNodes), utt(ndim)
       
-      INTEGER k1,i, ntens,ndim,nNodes,nUsrDof, nodi
+      INTEGER k1,i, ntens,ndim,nNodes,nUsrDof, nodi, incr_row
       
       DOUBLE PRECISION dNidx, dNidy
 
@@ -944,14 +944,14 @@ c
       do nodi=1,nNodes
        dNidx=bmat(1,nodi)
        dNidy=bmat(2,nodi)
-       
+       incr_row=(nodi-1)*ndim
+       do i=1,ndim
+        utt(i)=utmp(i+incr_row)
+       end do       
 c     deformation gradient
-       xx1(1,1)=xx1(1,1)+dNidx*utmp(1)
-       xx1(1,2)=xx1(1,2)+dNidy*utmp(1)
-       xx1(2,1)=xx1(2,1)+dNidx*utmp(2)
-       xx1(2,2)=xx1(2,2)+dNidy*utmp(2)
+       xx1(1,1)=xx1(1,1)+dNidx*utt(1)
+       xx1(1,2)=xx1(1,2)+dNidy*utt(1)
+       xx1(2,1)=xx1(2,1)+dNidx*utt(2)
+       xx1(2,2)=xx1(2,2)+dNidy*utt(2)
 c
-      end do
-c
-      return
-      end            
+      end do          
