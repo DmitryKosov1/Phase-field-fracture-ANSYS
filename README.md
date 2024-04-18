@@ -10,6 +10,8 @@ The second file **APDL- 2D crack example.txt** is an APDL script describing the 
 
 The third file **USERELEMLIB.f** is executable program code
 
+**CONTACT: dima45001@gmail.com**
+
 **Result**
 
 https://github.com/DmitryKosov1/Phase-field-fracture-ANSYS/assets/131136458/fb983067-12bb-4860-b1f3-759e900211cb
