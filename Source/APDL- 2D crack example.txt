@@ -19,22 +19,25 @@ KEYSYM = 0             !- 0-symmtric matrix, 1-unsymmetric matrix
 ET,1,USER300
 USRELEM, NNODES, NDIM, QUAD, NREAL, NSAVEVARS, NRSLTVAR, KEYANSMAT, NINTPNTS, KESTRESS, KEYSYM
 usrdof,Define,ux,uy,curr
+!to create a 3D element, instead of "QUAD" you need to write "BRICK", also need to enter an additional degree of freedom, 
+!so the usrdof command will look like this: usrdof,Define,ux,uy,uz,curr
+
 !*****************************************************	
 !RECOMENDATION
 !for static loading : AT1, kh=1
 !for fatigue loading : AT1, kh=0
 
 !******DEFINE PARAMETERS RELATED TO MODEL************
-L  = 0.04		!- Phase Field length parameter [mm]
-Gc = 2.7		!- Critical energy release rate [MPa mm]
-kf = 0		        !- loading : 0-static, 1-fatigue
-tm = 1			!- model   : 1-AT1, 2-AT2, 3-PF-CZM
+L  = 0.04		             !- Phase Field length parameter [mm]
+Gc = 2.7		              !- Critical energy release rate [MPa mm]
+kf = 0		                !- loading : 0-static, 1-fatigue
+tm = 1			               !- type model   : 1-AT1, 2-AT2, 3-PF-CZM
 df = 1                  !- calculate driving force : 1-umat, 2-Amor, 3-meihe, 4-maxstress, 5-stress*epsilon
 lr = 1                  !- for model PF-CZM : 1-linear, 2-nonlinear 
 ks = 1                  !- 0-monolithic, 1-staggered
 sigc = 500              !- Material strength [MPa]
 kh = 1                  !- keyHmin : 0-off, 1-on for AT1 model 
-hhh  = 0.01		!- element size	
+hhh  = 0.01		           !- element size	
 
 R,1,L,Gc,kf,tm,df,lr
 RMORE, ks, sigc, kh
@@ -43,19 +46,24 @@ RMORE, ks, sigc, kh
 !*****************MATERIAL PROPETIES*******************
 E  = 210000 		!- Young's modulus [MPa]
 v  = 0.3		!- Poisson's ratio
-sig0 = 465              !- Yield stress [MPa]
-Rinf = 55               !- Exponential coefficient [MPa]          
-b = 2.38                !- Exponential saturation parameter
-C = 23554               !- Chaboche constants 1 [MPa]
-gamma = 139             !- Chaboche constants 2
 
 MPTEMP,,,,,,,,  
 MPTEMP,1,0  
 MPDATA,EX,1,,E
 MPDATA,PRXY,1,,v 
 
+!For plastic calculations, it is necessary to introduce the plastic properties of the material and introduce 
+!the law of isotropic hardening;below are the commands for Voce law and Chaboche law for kinematic hardening
+
+!sig0 = 465                   !- Yield stress [MPa]
+!Rinf = 55                    !- Exponential coefficient [MPa]          
+!b = 2.38                     !- Exponential saturation parameter
+
 !TB,NLISO,1,1,,VOCE           ! Activate NLISO data table
 !TBDATA,1,sig0,1e-10,Rinf,b   ! Constants at first temperature
+
+!C = 23554                     !- Chaboche constants 1 [MPa]
+!gamma = 139                   !- Chaboche constants 2
 
 !TB,CHABOCHE,1,1,1            ! Activate Chaboche data table with                        
 !TBDATA,1,sig0                ! C1 - Initial yield stress
