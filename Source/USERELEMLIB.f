@@ -235,7 +235,7 @@ c
 
       DOUBLE PRECISION temper(nNodes), temperB(nNodes), tRef, 
      &                 Press(nPress), RealConst(nReal),
-     &                 saveVars(nSaveVars), klk(30),
+     &                 saveVars(nSaveVars), klk(18),
      &                 xRef(nDim,nNodes), xCur(nDim,nNodes),
      &                 TotValDofs(nUsrDof), IncValDofs(nUsrDof), 
      &                 ItrValDofs(nUsrDof), VelValDofs(nUsrDof),
@@ -273,7 +273,8 @@ c --- Included decks, functions, variables defined for the example
       EXTERNAL         vzero, vmove, vmult, vdot, vidot,
      &                 maxv, matxb, matba, maat, matsym, getMatProp,
      &                 erhandler, equivStrain, ElemJac, ElemMass,
-     &                 ElemRsltNode, ElemShpFn, pplock, ppunlock
+     &                 ElemRsltNode, ElemShpFn, pplock, ppunlock,
+     &                 prinst
 
       DOUBLE PRECISION vdot, vidot
 
@@ -308,8 +309,7 @@ c --- Included decks, functions, variables defined for the example
      &                 ddgNum, gDen, dgDen, ddgDen, a, StrainEl(6), 
      &                 gf, dgf, sigc, ddgf, mm, EdevS, Edev(3), phinn,
      &                 psip, psin, eg, trEp2, trEn2, trEp, trEn, ggf,
-     &                 STR(3), Stress3(6), psipPl, psipn
-      
+     &                 STR(3), Stress3(6), psipPl, psipn, STR2(11), psit
       
       CHARACTER*4      label(3)
 
@@ -337,6 +337,7 @@ c --- initialization
       rhs = 0.d0
       numU = nUsrDof/nNodes
       pi = 3.14159
+      nlgeom = 0
       
       
       IF (numU.EQ.3.d0) THEN
@@ -486,14 +487,16 @@ c*************************************************************************
 
 c******reading data from the previous step********************************          
           do i=1,ntens
-              oldStress(i) = saveVars(20*(intPnt-1) + i)
-              oldStrain(i) = saveVars(20*(intPnt-1) + i + 6)
+              oldStress(i) = saveVars(30*(intPnt-1) + i)
+              oldStrain(i) = saveVars(30*(intPnt-1) + i + 6)
           end do    
-          phin = saveVars(20*(intPnt-1) + 13)
-          Hn = saveVars(20*(intPnt-1) + 14)
-          alphn = saveVars(20*(intPnt-1) + 15)
-          alphBn = saveVars(20*(intPnt-1) + 16) 
-          psip = saveVars(20*(intPnt-1) + 18)
+          phin = saveVars(30*(intPnt-1) + 13)
+          psit = saveVars(30*(intPnt-1) + 19)
+          Hn = saveVars(30*(intPnt-1) + 14)
+          alphn = saveVars(30*(intPnt-1) + 15)
+          alphBn = saveVars(30*(intPnt-1) + 16) 
+          psip = saveVars(30*(intPnt-1) + 18)
+          psit = saveVars(30*(intPnt-1) + 19)
           psipn = psip 
           phinn = phin
 c*************************************************************************  
@@ -525,19 +528,16 @@ c******calculate strains and stress***************************************
          CALL maxv (b(1,1), u(1), IncStrain(1), nTens, 
      &              nUsrDof-nNodes)
           
-         nlgeom = 0
-         IF (nlgeom.EQ.0) THEN
-             DO iDim = 1, 3
-                DO iDim1 = 1, 3
-                    defG0(iDim, iDim1) = 0.0D0
-                END DO
-                defG0(iDim, iDim) = 1.0D0
+         
+         DO iDim = 1, 3
+             DO iDim1 = 1, 3
+                 defG0(iDim, iDim1) = 0.0D0
              END DO
-             CALL vmove (defG0(1,1),defG(1,1),9)
-         ELSE
-             CALL straininc(ntens,ndim,nNodes,nUsrDof,b,u,defG0)
-             CALL vmove (defG0(1,1),defG(1,1),9)
-         END IF
+             defG0(iDim, iDim) = 1.0D0
+         END DO        
+         CALL vmove (defG0(1,1),defG(1,1),9)
+         CALL straininc(ntens,ndim,nNodes,nUsrDof,b,u,defG0)
+
          
          IF (keyAnsMat.EQ.1) THEN
 c           ---- Use standard ANSYS material (METHOD 1)
@@ -556,6 +556,7 @@ c          ---- USERMAT is called from here
             nu = MatProp(5)            
             Ex = MatProp(1)*2.d0*(1.d0+nu)
             bulk = Ex/3.d0/(1.d0-2.d0*nu)
+c            call get_ElmData ('SVAR', elId,intPnt,18, klk)
          ELSE
 c          ---- Make up your own material (METHOD 2)
             IF (nlgeom.EQ.0) CALL vmove (IncStrain(1), Strain(1),
@@ -586,18 +587,14 @@ c*************************************************************************
                  Hmin = 3.d0*Gc/(16.d0*xlc)
              else
                  Hmin = 0.d0
-             endif   
+             endif 
          else if (typemodel .EQ. 2) then
              gf = (1.d0-phi)**2 + xk
              ggf = (1.d0-phinn)**2 + xk
              dgf = 2*(phi -1)
              ddgf = 2.d0
-             w = phi
-             if (phi.EQ.0) then
-                 dw = 0.d0
-             else    
-                 dw = 1.d0
-             end if    
+             w = phi   
+             dw = 1.d0   
              ddw = 0.d0
              cw = 2.d0/3.d0
              Hmin = 3.d0*Gc/(16.d0*xlc) 
@@ -626,21 +623,21 @@ c*************************************************************************
             dgf=(dgNum*gDen-gNum*dgDen)/(gDen**2.d0)
             ddgf=((ddgNum*gDen-gNum*ddgDen)*gDen-2.d0*
      1 (dgNum*gDen-gNum*dgDen)*dgDen)/(gDen**3.d0)
-            Hmin = 0.5d0*sigc**2/Ex           
+            Hmin = 0.5d0*sigc**2/Ex 
+            
          end if
 c*************************************************************************
          
 c********calculate driving force fracture*********************************
          psin = 0.d0
-         StrainEl(1:4) = Strain-StrainPl
-         IF (numU.EQ.3.d0) THEN   
-             StrainEl(5) = 0.d0
-             StrainEl(6) = 0.d0
-         ELSE
-             StrainEl(5) = Strain(5)-StrainPl(5)
-             StrainEl(6) = Strain(6)-StrainPl(6)             
-         END IF
-         CALL SPRIND (StrainEl, STR, 2)
+         STR2 = 0.d0
+         do i=1, ntens
+             STR2(i) = Stress(i)
+         end do
+         CALL prinst (STR2)
+         STR(1) = 1.d0/Ex*(STR2(7)-nu*(STR2(8)+STR2(9)))
+         STR(2) = 1.d0/Ex*(STR2(8)-nu*(STR2(9)+STR2(7)))
+         STR(3) = 1.d0/Ex*(STR2(9)-nu*(STR2(7)+STR2(8)))
          trE=STR(1)+STR(2)+STR(3)
          trEp=0.5d0*(trE+abs(trE))
          trEn=0.5d0*(trE-abs(trE))
@@ -664,33 +661,25 @@ c********calculate driving force fracture*********************************
              psin = nu*eg/(1d0-2d0*nu)*trEn**2d0+eg*trEn2
              psipPl = EnergyD(2)
          elseif  (drivingforce.eq.1) then! no split
-              psip = EnergyD(1)
-              psipPl = EnergyD(2)
+             psip = EnergyD(1) + EnergyD(2)
+             psipPl = 0.d0
+c             psipPl = EnergyD(2)
          elseif  (drivingforce.eq.4) then! maxstress
-            Stress3(1:4) = Stress
-            IF (numU.EQ.3.d0) THEN   
-                Stress3(5) = 0.d0
-                Stress3(6) = 0.d0
-            ELSE
-                Stress3(5) = Stress(5)
-                Stress3(6) = Stress(6)             
-            END IF
-            CALL SPRIND (Stress3, STR, 1) 
-            psip = 0.5d0*max(STR(1),STR(2),STR(3))**2/Ex
-            psipPl = EnergyD(2)
+             psip = 0.5d0*max(STR2(7),STR2(8),STR2(9))**2/Ex
+             psipPl = EnergyD(2)
          else ! no split
-            do i =1, ntens 
-                psip = psip + (oldStress(i) + 
+            do i =1, ntens
+                if (Strain(i) .LE. 0.d0) then
+                    psip = psip + (oldStress(i) + 
      1          Stress(i))*(Strain(i) - oldStrain(i))*0.5d0
+                end if    
             end do
             psipPl = 0.d0
-         endif            
-
-         if(kflagS.eq.0) then
-             H=max(Hmin, Hn, psip, psipn)
-         else
-             H=max(Hmin, psipn, Hn)
-         end if      
+         endif  
+         
+         H=max(psit,psip,Hmin)
+             
+         if(kflagS.eq.1) H=max(psit, Hmin)
          
 c*************************************************************************
           
@@ -712,16 +701,18 @@ c*************************************************************************
           
 c*********data recording**************************************************
           DO i=1,ntens
-              saveVars(20*(intPnt-1) + i) = Stress(i)
-              saveVars(20*(intPnt-1) + i + 6) = Strain(i)
+              saveVars(30*(intPnt-1) + i) = Stress(i)
+              saveVars(30*(intPnt-1) + i + 6) = Strain(i)
           END DO    
-          saveVars(20*(intPnt-1) + 13) = phi
-          saveVars(20*(intPnt-1) + 14) = H    
-          saveVars(20*(intPnt-1) + 15) = alph 
-          saveVars(20*(intPnt-1) + 16) = alphB
-          saveVars(20*(intPnt-1) + 17) = Ac
-          saveVars(20*(intPnt-1) + 18) = psip
-          saveVars(20*(intPnt-1) + 19) = H + EnergyD(2) 
+          saveVars(30*(intPnt-1) + 13) = phi
+          saveVars(30*(intPnt-1) + 14) = H    
+          saveVars(30*(intPnt-1) + 15) = alph 
+          saveVars(30*(intPnt-1) + 16) = alphB
+          saveVars(30*(intPnt-1) + 17) = Ac
+          saveVars(30*(intPnt-1) + 18) = psip
+          saveVars(30*(intPnt-1) + 19) = psip 
+          saveVars(30*(intPnt-1) + 20) = klk(11)
+          saveVars(30*(intPnt-1) + 21) = klk(12) 
 c*************************************************************************
           
 c*********form and assemble stiffness matrix and internal force vector****         
@@ -789,128 +780,7 @@ c*************************************************************************
       RsltVar = saveVars 
       RETURN
       END
-            
-      SUBROUTINE SPRIND(S, PS, LSTR)
-
-      INTEGER LSTR, NDI, NSHR
-      DOUBLE PRECISION S(6), PS(3), A(3), B(3), C(3), V(3), AN(3,3)
-      DOUBLE PRECISION I1, I2, I3, J1, J2, J3, R, T, Q, ALP, SCALC,
-     1     PRINC1, PRINC2, PRINC3, L(3), M(3), N(3)
-      PARAMETER (ONE=1.D0,TWO=2.D0,THREE=3.D0, TWOSEVEN = 27.D0,
-     1     THIRD = ONE/THREE, TWENTYSEVENTH= ONE/TWOSEVEN,
-     2     TWOTWENTYSEVENTH = TWO/TWOSEVEN, ONETWENTYDEG=2.094395102D0,
-     3     TWOFORTYDEG=4.188790205D0)
-C
-
-C======================================================================+
-C-----------
-C  INPUT :
-C-----------
-C  S     	: STRESS OR STRAIN TENSOR
-C  LSTR 	: FLAG DETERMINING STRESS OR STRAIN CALCULATION
-C  NDI  	: NUMBER OF DIRECT STRESS/STRAIN COMPONENTS
-C  NSHR         : NUMBER OF SHEAR COMPONENTS
-C-----------
-C  OUTPUT :
-C-----------
-C  PS(I), I=1,2,3       : THE THREE PRINCIPAL VALUES
-C  AN(K1,I), I=1,2,3	: THE DIRECTION COSINES OF THE PRINCIPAL DIRECTIONS CORRESPONDING TO PS(K1)
-C----------------------------------------------------------------------+
-C=======================================================================
-C
-C     Calculate stress or strain invariants based on LSTR value
-      IF (LSTR.EQ.1) THEN
-         I1 = S(1)+S(2)+S(3)
-         I2 = (S(1)*S(2))+(S(2)*S(3))+(S(1)*S(3))
-     1        -(S(4)**2)-(S(5)**2)-(S(6)**2)
-         I3 = (S(1)*S(2)*S(3))+(2*S(4)*S(5)*S(6))-(S(1)*S(5)**2)
-     1        -(S(2)*S(6)**2)-(S(3)*S(4)**2)
-         R = (THIRD*I1**2)-I2
-         T = SQRT(TWENTYSEVENTH*R**3)
-         Q = (THIRD*I1*I2)-I3-(TWOTWENTYSEVENTH*I1**3)
-         IF (Q.EQ.0.d0 .and. T.EQ.0.d0) THEN
-             ARG = 0.d0
-         ELSE    
-             ARG = -Q/(TWO*T)
-         ENDIF          
-         ARG = -Q/(TWO*T)
-         IF (ARG.GT.1) THEN
-            ARG = ARG - 1.E-10
-         END IF
-         ALP = ACOS(ARG)
-         SCALC = SQRT(THIRD*R)
-         PRINC1 = (2*SCALC*COS(ALP/THREE))+(THIRD*I1)
-         PRINC2 = (2*SCALC*COS((ALP/THREE)+TWOFORTYDEG))+(THIRD*I1)
-         PRINC3 = (2*SCALC*COS((ALP/THREE)+ONETWENTYDEG))+(THIRD*I1)
-      ELSE
-         J1 = S(1)+S(2)+S(3)
-         J2 = S(1)*S(2)+S(2)*S(3)+S(1)*S(3)
-     1        -(S(4)**2)-(S(5)**2)-(S(6)**2)
-         J3 = S(1)*S(2)*S(3)+(2*S(4)*S(5)*S(6))-(S(1)*S(5)**2)
-     1        -(S(2)*S(6)**2)-(S(3)*S(4)**2)
-         R = (THIRD*J1**2)-J2
-         T = SQRT(TWENTYSEVENTH*R**3)
-         Q = (THIRD*J1*J2)-J3-(TWOTWENTYSEVENTH*J1**3)
-         IF (Q.EQ.0.d0 .and. T.EQ.0.d0) THEN
-             ARG = 0.d0
-         ELSE    
-             ARG = -Q/(TWO*T)
-         ENDIF    
-         IF (ARG.GT.1) THEN
-            ARG = ARG - 1.E-10
-         END IF
-         ALP = ACOS(ARG)
-         SCALC = SQRT(THIRD*R)
-         PRINC1 = (2*SCALC*COS(ALP/THREE))+(THIRD*J1)
-         PRINC2 = (2*SCALC*COS((ALP/THREE)+TWOFORTYDEG))+(THIRD*J1)
-         PRINC3 = (2*SCALC*COS((ALP/THREE)+ONETWENTYDEG))+(THIRD*J1)
-      END IF
-C     Assign Principal Stress/Strains values to array
-C
-      PS(1) = PRINC1
-      PS(2) = PRINC2
-      PS(3) = PRINC3
-C
-C     Calculate cofactors and factor
-C
-      DO K=1, 3
-         A(K)=((S(2)-S(K))*(S(3)-S(K)))-(S(5)**2)
-         B(K)=-(S(4)*(S(3)-S(K)))-(S(5)*S(6))
-         C(K)=(S(4)*S(5))-((S(2)-S(K))*S(6))
-      END DO
-C      PRINT *, A
-C      PRINT *, B
-C      PRINT *, C
-      DO K=1, 3
-         V(K)=1/SQRT(A(K)**2+B(K)**2+C(K)**2)
-      END DO
-C      PRINT *, V
-C
-C     Calculate Direction Cosines
-C
-      DO K=1, 3
-         L(K)=A(K)*V(K)
-         M(K)=B(K)*V(K)
-         N(K)=C(K)*V(K)
-      END DO
-C      PRINT *, L
-C      PRINT *, M
-C      PRINT *, N
-C
-C     Assign Direction Cosines to array locations
-C
-      AN(1,1)=L(1)
-      AN(1,2)=M(1)
-      AN(1,3)=N(1)
-      AN(2,1)=L(3)
-      AN(2,2)=M(3)
-      AN(2,3)=N(3)
-      AN(3,1)=L(2)
-      AN(3,2)=M(2)
-      AN(3,3)=N(2)
-C      PRINT *, AN
-      RETURN
-      END
+      
       
        subroutine straininc(ntens,ndim,nNodes,nUsrDof,bmat,utmp,xx1)
 c
@@ -954,4 +824,7 @@ c     deformation gradient
        xx1(2,1)=xx1(2,1)+dNidx*utt(2)
        xx1(2,2)=xx1(2,2)+dNidy*utt(2)
 c
-      end do          
+      end do
+c
+      return
+      end    
