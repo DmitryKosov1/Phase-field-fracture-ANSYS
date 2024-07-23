@@ -242,7 +242,7 @@ c
      &                 AccValDofs(nUsrDof),      timval,
      &                 eStiff(nUsrDof,nUsrDof), eMass(nUsrDof,nUsrDof), 
      &                 eDamp(nUsrDof,nUsrDof), eSStiff(nUsrDof,nUsrDof), 
-     &                 fExt(nUsrDof), fInt(nUsrDof), 
+     &                 fExt(nUsrDof), fInt(nUsrDof), fPres(nUsrDof),
      &                 elVol, elMass, elCG(3),
      &                 RsltBsc(nRsltBsc), RsltVar(nRsltVar), 
      &                 elEnergy(nElEng)
@@ -297,15 +297,15 @@ c --- Included decks, functions, variables defined for the example
      &                 StrainTh(nDim*2), StrainSw, StressBk(nDim*2),
      &                 MatRotGlb(3,3), wStrainTh(48), wStrainPl(48),
      &                 wStrainCr(48), eMassb(nNodes,nNodes), EnergyD(3),
-     &                 phik(nNodes), phi, dNdx(nDim,nNodes) , phin, H,               !
-     &                 du(nDim*nNodes), Gc, xlc, xk, dstran(nDim*2,1),             !
-     &                 oldStrain(nDim*2), oldStress(nDim*2), Hn, Psi,                    !     
-     &                 Stress2(nDim*2,1), dN(nNodes,1), w, dw, ddw, cw,                             !
-     &                 b(nDim*2,nUsrDof-nNodes), rhs(nUsrdof), trE,                      !
-     &                 amatrx(nUsrDof,nUsrDof),eStiff1(nUsrDof,nUsrDof),             !   
+     &                 phik(nNodes), phi, dNdx(nDim,nNodes) , phin, H,  
+     &                 du(nDim*nNodes), Gc, xlc, xk, dstran(nDim*2,1),  
+     &                 oldStrain(nDim*2), oldStress(nDim*2), Hn, Psi,   
+     &                 Stress2(nDim*2,1), dN(nNodes,1), w, dw, ddw, cw, 
+     &                 b(nDim*2,nUsrDof-nNodes), rhs(nUsrdof), trE,    
+     &                 amatrx(nUsrDof,nUsrDof),eStiff1(nUsrDof,nUsrDof),
      &                 u(nUsrDof-nNodes), pl, pln, plast, Psi1, sedd,
-     &                 alph, alphn, alphBn, Fdeg, Ac, alphT, seddn,                ! 
-     &                 alphB, coordx, pi, bulk, Hmin, e, d, gNum, dgNum, 
+     &                 alph, alphn, alphBn, Fdeg, Ac, alphT, seddn,     
+     &                 alphB, coordx, pi, bulk, Hmin, e, d, gNum, dgNum,
      &                 ddgNum, gDen, dgDen, ddgDen, a, StrainEl(6), 
      &                 gf, dgf, sigc, ddgf, mm, EdevS, Edev(3), phinn,
      &                 psip, psin, eg, trEp2, trEn2, trEp, trEn, ggf,
