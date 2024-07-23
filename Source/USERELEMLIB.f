@@ -660,8 +660,8 @@ c********calculate driving force fracture*********************************
              psip = nu*eg/(1d0-2d0*nu)*trEp**2d0+eg*trEp2
              psin = nu*eg/(1d0-2d0*nu)*trEn**2d0+eg*trEn2
              psipPl = EnergyD(2)
-         elseif  (drivingforce.eq.1) then! no split
-             psip = EnergyD(1) + EnergyD(2)
+         elseif  (drivingforce.eq.1) then! no split and creep
+             psip = EnergyD(1) + EnergyD(2) + EnergyD(3)
              psipPl = 0.d0
 c             psipPl = EnergyD(2)
          elseif  (drivingforce.eq.4) then! maxstress
