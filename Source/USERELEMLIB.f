@@ -241,9 +241,9 @@ c
      &                 ItrValDofs(nUsrDof), VelValDofs(nUsrDof),
      &                 AccValDofs(nUsrDof),      timval,
      &                 eStiff(nUsrDof,nUsrDof), eMass(nUsrDof,nUsrDof), 
-     &                 eDamp(nUsrDof,nUsrDof), eSStiff(nUsrDof,nUsrDof), 
-     &                 fExt(nUsrDof), fInt(nUsrDof), fPres(nUsrDof),
-     &                 elVol, elMass, elCG(3),
+     &                 eDamp(nUsrDof,nUsrDof), eSStiff(nUsrDof,nUsrDof),
+     &                 fExt(nUsrDof), fInt(nUsrDof), fPres(8),
+     &                 pPres(8), SHTR(8,8),elVol, elMass, elCG(3),
      &                 RsltBsc(nRsltBsc), RsltVar(nRsltVar), 
      &                 elEnergy(nElEng)
 c
@@ -361,7 +361,20 @@ c --- initialization
       IF (keyMtx(2).EQ.1) CALL vzero (eMass(1,1) ,nUsrDof2)
       IF (keyMtx(5).EQ.1) CALL vzero (fExt(1)    ,nUsrDof)
       IF (keyMtx(6).EQ.1) CALL vzero (fInt(1)    ,nUsrDof)
-
+      IF (kPress.EQ.1)    CALL vzero (fPres(1)    ,8)
+      
+c --- !!! rearray pressure vector. Now realized only for 4-node element
+      pPres(1)=-Press(8)
+      pPres(2)=-Press(1)
+      pPres(3)= Press(3)
+      pPres(4)=-Press(2)
+      pPres(5)= Press(4)
+      pPres(6)= Press(5)
+      pPres(7)=-Press(4)
+      pPres(8)= Press(6)
+c      pPres=(-1.0)*pPres
+      
+      
 *!*!*!*!*!*!*!*!*!*!*!*****start integration loop*!*!*!*!*!*!*!*!*!*!*!*!
 
       DO intPnt = 1, nIntPnts
@@ -377,12 +390,23 @@ c --- obtain shape functions and derivatives of shape functions
             CALL ElemShpFn (2, intPnt, 2, shDerIso(1,1), nUsrDof)
             CALL ElemShpFn (2, intPnt, 3, wtIP(1), 1)
          END IF
-         
+         SHTR=0.d0
          dN = 0.d0
          do i=1,nNodes
            dN(i,1) = shIso(i)
          end do  
-
+         SHTR(1,1)=shIso(1)
+         SHTR(2,2)=shIso(1)
+         SHTR(3,3)=shIso(2)
+         SHTR(4,4)=shIso(2)
+         SHTR(5,5)=shIso(3)
+         SHTR(6,6)=shIso(3)
+         SHTR(7,7)=shIso(4)
+         SHTR(8,8)=shIso(4)
+         fPres = matmul(SHTR,pPres)
+          do i=1,8
+           rhs(i) = rhs(i) + fPres(i)
+         end do
 c --- coordinates at integration points
 
          DO iDim = 1, nDim
